@@ -3,8 +3,8 @@
 ..................................................................Global Variables.........................................................
 #========================================================================================================================================== #
 */
-//global.log = require('./lib/logging.js');
-global.ROVER = {
+
+const rover = {
   gps: null,
   pixhawk_port: {
     comName: null,
@@ -27,23 +27,35 @@ global.ROVER = {
   targetComponent: 0,
   SerialPort: require("serialport").SerialPort,
   mavlink: require("./lib/mavlink.js"),
+  init_logs: require("./lib/logging/init_logs.js"),
+	create_logs: require("./lib/logging/create_logs.js"),
+	logging: require("./lib/logging/logging.js"),
+  net: require('net'),
   GPS: require("gps"),
   angles: require("angles"),
   bufferpack: require("bufferpack"),
-  arduino_roof: require("./lib/arduino_roof.js"),
   pixhawk_drone: require("./lib/pixhawk_drone.js"),
+  init_robotkit: require('./lib/robotkit/init_robotkit.js'),
+	connect_to_sitl: require('./lib/robotkit/connect_to_sitl.js'),
+  	sitl: {
+		on: true,
+		port: 5760,
+		host: '127.0.0.1',
+		robotkit: null
+
+	},
 };
 
 //Ports: define...................................
 
 function update_serialports(show_ports) {
-  ROVER.SerialPort.list(function (err, ports) {
+  rover.SerialPort.list(function (err, ports) {
     ports.forEach(function (port) {
       if (show_ports) {
         console.log(port);
-      } else if (!ROVER.pixhawk_port.comName == "pixhawk") {
+      } else if (!rover.pixhawk_port.comName == "pixhawk") {
         console.log("Pixhawk comName: " + port.comName);
-        ROVER.pixhawk_port.comName = port.comName;
+        rover.pixhawk_port.comName = port.comName;
         connect_to_pixhawk();
       }
     });
@@ -59,6 +71,23 @@ setInterval(function () {
   update_serialports(false);
 }, 5000);
 
+
+
+
+
+//SITL: Software in the loop settings...................
+if (rover.sitl.on)
+{
+
+	rover.init_robotkit(rover);
+
+	setTimeout(function()
+	{
+		rover.connect_to_sitl(rover);
+	}, 2000);
+
+}
+
 /*
 #========================================================================================================================================== #
 ..................................................................USB/Serial Pixhawk...........................................................
@@ -68,42 +97,42 @@ setInterval(function () {
 //Open pixhawk port..........................................
 
 function connect_to_pixhawk() {
-  if (ROVER.pixhawk_port.comName) {
-    ROVER.pixhawk_port.serial = new ROVER.SerialPort(ROVER.pixhawk_port.comName, {
-      baudRate: ROVER.pixhawk_port.baudrate,
+  if (rover.pixhawk_port.comName) {
+    rover.pixhawk_port.serial = new rover.SerialPort(rover.pixhawk_port.comName, {
+      baudRate: rover.pixhawk_port.baudrate,
     });
 
     //When port is open, start up mavlink
-    ROVER.pixhawk_port.serial.on("open", function () {
+    rover.pixhawk_port.serial.on("open", function () {
       console.log("Pixhawk Port is open");
 
-      ROVER.pixhawk_port.mavlink = new mavlink(1, 1);
+      rover.pixhawk_port.mavlink = new mavlink(1, 1);
 
-      ROVER.pixhawk_port.mavlink.setConnection(ROVER.pixhawk_port.serial);
+      rover.pixhawk_port.mavlink.setConnection(rover.pixhawk_port.serial);
 
-      ROVER.messages.pixhawk.connected = true;
+      rover.messages.pixhawk.connected = true;
 
       //Parse any new incoming data
 
-      ROVER.pixhawk_port.serial.on("data", function (data) {
+      rover.pixhawk_port.serial.on("data", function (data) {
         //console.log(data);
-        if (!ROVER.messages.pixhawk_drone.connected) {
-          ROVER.messages.pixhawk_drone.connected = true;
+        if (!rover.messages.pixhawk_drone.connected) {
+          rover.messages.pixhawk_drone.connected = true;
           send_to_pixhawk(
             1,
             1,
-            ROVER.mavlink.MAV_DATA_STREAM_ALL,
+            rover.mavlink.MAV_DATA_STREAM_ALL,
             100,
             1,
             "request_data_stream"
           );
         }
 
-        ROVER.pixhawk_port.mavlink.parseBuffer(data);
+        rover.pixhawk_port.mavlink.parseBuffer(data);
       });
 
       //On pixhawk usb/serial port message...........................
-      ROVER.pixhawk_port.mavlink.on("message", function (message) {
+      rover.pixhawk_port.mavlink.on("message", function (message) {
         var data = {
           from_src: "radio_pixhawk",
           message: message.name,
@@ -118,12 +147,12 @@ function connect_to_pixhawk() {
       });
     });
 
-    ROVER.pixhawk_port.serial.on("error", function (e) {
+    rover.pixhawk_port.serial.on("error", function (e) {
       console.log("Serial Port error: ", e);
-      ROVER.pixhawk_port.serial = null;
-      ROVER.messages.pixhawk.connected = false;
-      ROVER.messages.pixhawk_drone.connected = false;
-      ROVER.pixhawk_port.comName = null;
+      rover.pixhawk_port.serial = null;
+      rover.messages.pixhawk.connected = false;
+      rover.messages.pixhawk_drone.connected = false;
+      rover.pixhawk_port.comName = null;
     });
   } else {
     console.log("Missing pixhawk port");
@@ -140,12 +169,12 @@ function send_to_pixhawk(
   start_stop,
   command
 ) {
-  if (ROVER.pixhawk_port.mavlink) {
-    if (ROVER.messages.pixhawk_drone.connected) {
+  if (rover.pixhawk_port.mavlink) {
+    if (rover.messages.pixhawk_drone.connected) {
       var request = null;
 
       if (command == "request_data_stream") {
-        request = new ROVER.mavlink.messages.request_data_stream(
+        request = new rover.mavlink.messages.request_data_stream(
           target_system,
           target_component,
           req_stream_id,
@@ -158,7 +187,7 @@ function send_to_pixhawk(
 
       if (request) {
         console.log("Request", request);
-        ROVER.pixhawk_port.mavlink.send(request);
+        rover.pixhawk_port.mavlink.send(request);
       } else {
         console.log("Request not found");
       }
@@ -185,9 +214,9 @@ function send_pixhawk_command(
   param6,
   param7
 ) {
-  if (ROVER.pixhawk_port.mavlink) {
+  if (rover.pixhawk_port.mavlink) {
     var request = null;
-    request = new ROVER.mavlink.messages.command_long(
+    request = new rover.mavlink.messages.command_long(
       target_system,
       target_component,
       command,
@@ -203,7 +232,7 @@ function send_pixhawk_command(
 
     if (request) {
       console.log("Mav Command", request);
-      ROVER.pixhawk_port.mavlink.send(request);
+      rover.pixhawk_port.mavlink.send(request);
     } else {
       console.log("Command Request Not Found");
     }
