@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "angles": "^0.5.1",
+    "bufferpack": "^0.0.6",
+    "gps": "^0.8.1",
+    "jspack": "^0.0.4",
+    "serialport": "^13.0.0",
+    "underscore": "^1.13.7"
+  }
+}
