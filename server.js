@@ -49,6 +49,9 @@ const rover = {
   connect_to_sitl: require('./lib/robotkit/connect_to_sitl.js'),
   deliver_package: require('./lib/mission/deliver_package.js'),
   mission_item_reached: require('./lib/mission/mission_item_reached.js'),
+  download_mission: require('./lib/mission/download_mission.js'),
+  reset_rover: require('./lib/mission/reset_rover.js'),
+  mission_item_array: require('./lib/mission/mission_item_array.js'),
   delivery_device: 'dump_trailer',
   flight_mode_trigger: null,
   sitl: {
@@ -155,6 +158,7 @@ const rover = {
   mission: {
     current_mission_seq: 0,
     mission_count: 0,
+    waypoints: []
 
   },
   mav_version: 2,
