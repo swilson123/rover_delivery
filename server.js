@@ -186,7 +186,6 @@ function update_serialports(show_ports) {
 rover.init_logs(rover);
 
 
-
 //SITL: Software in the loop settings...................
 if (rover.sitl.on) {
 
@@ -196,6 +195,10 @@ if (rover.sitl.on) {
     rover.connect_to_sitl(rover);
   }, 2000);
 
+}
+else{
+  //connect to pixhawk...............
+  
 }
 
 
