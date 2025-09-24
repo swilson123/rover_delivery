@@ -12,6 +12,8 @@ const rover = {
     serial: null,
     mavlink: null,
     ping_num: 0,
+    targetSystem: 1,
+    targetComponent: 1
   },
   gps: {
     latitude: 0,
@@ -45,6 +47,10 @@ const rover = {
   pixhawk_drone: require("./lib/pixhawk_drone.js"),
   init_robotkit: require('./lib/robotkit/init_robotkit.js'),
   connect_to_sitl: require('./lib/robotkit/connect_to_sitl.js'),
+  deliver_package: require('./lib/mission/deliver_package.js'),
+  mission_item_reached: require('./lib/mission/mission_item_reached.js'),
+  delivery_device: 'dump_trailer',
+  flight_mode_trigger: null,
   sitl: {
     on: true,
     port: 5760,
