@@ -158,6 +158,7 @@ const rover = {
   mission: {
     current_mission_seq: 0,
     mission_count: 0,
+    package_delivered: false,
     waypoints: []
 
   },
