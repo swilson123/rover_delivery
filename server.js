@@ -224,4 +224,23 @@ else{
   
 }
 
+// Auto-start RPLIDAR when server starts (if not SITL or even if SITL depending on opts)
+try {
+  const rplidar = require('./lib/lidar/rplidar.js');
+  // start with defaults; parse mode enabled
+  rover.lidar = rplidar.init(rover, { parse: true });
+  rover.lidar.on('open', (info) => { console.log('RPLIDAR connected', info); });
+  rover.lidar.on('data', (node) => {
+    // node: { quality, startFlag, angle, distance_mm }
+    const line = `LIDAR angle=${node.angle.toFixed(2)} distance=${node.distance_mm.toFixed(2)} quality=${node.quality} start=${node.startFlag}`;
+    console.log(line);
+    // optionally store last reading on rover
+    rover.last_lidar = node;
+  });
+  rover.lidar.on('raw', (chunk) => { /* ignore raw by default */ });
+  rover.lidar.on('error', (err) => { console.error('RPLIDAR error', err && err.message); });
+} catch (e) {
+  console.warn('RPLIDAR module not available or failed to start:', e && e.message);
+}
+
 
