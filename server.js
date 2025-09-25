@@ -30,7 +30,9 @@ const rover = {
   dateFormat: require('dateformat'),
   fs: require('fs'),
   net: require('net'),
-  SerialPort: require("serialport").SerialPort,
+  // SerialPort: require("serialport").SerialPort, // old API
+  // use the modern serialport export; we'll keep the constructor available below
+  SerialPort: null,
   mavlink: require("./lib/pixhawk/mavlink.js"),
   init_logs: require("./lib/logging/init_logs.js"),
   create_logs: require("./lib/logging/create_logs.js"),
@@ -165,20 +167,41 @@ const rover = {
   mav_version: 2,
 };
 
+// host information used by logging
+rover.hostname = require('os').hostname();
+
 //Ports: define...................................
 
-function update_serialports(show_ports) {
-  rover.SerialPort.list(function (err, ports) {
+async function update_serialports(show_ports) {
+  // lazy-require serialport to avoid throwing at module load if native bindings missing
+  if (!rover.SerialPort) {
+    try {
+      const sp = require('serialport');
+      // serialport v9+ exports SerialPort and a static list() method that returns a Promise
+      rover.SerialPort = sp.SerialPort || sp;
+    } catch (err) {
+      console.error('update_serialports: failed to require serialport', err);
+      return;
+    }
+  }
+
+  try {
+    const ports = await rover.SerialPort.list();
     ports.forEach(function (port) {
       if (show_ports) {
         console.log(port);
-      } else if (!rover.pixhawk_port.comName == "pixhawk") {
-        console.log("Pixhawk comName: " + port.comName);
-        rover.pixhawk_port.comName = port.comName;
-        connect_to_pixhawk();
+      } else if (!rover.pixhawk_port.comName) {
+        // set first available port as pixhawk comName (keep existing behavior but fixed condition)
+        console.log('Pixhawk comName: ' + port.path || port.comName);
+        rover.pixhawk_port.comName = port.path || port.comName;
+        if (typeof connect_to_pixhawk === 'function') {
+          connect_to_pixhawk();
+        }
       }
     });
-  });
+  } catch (err) {
+    console.error('update_serialports: error listing ports', err);
+  }
 }
 
 
