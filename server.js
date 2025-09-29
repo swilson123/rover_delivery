@@ -20,6 +20,9 @@ const rover = {
     longitude: 0,
     altitude: 0,
   },
+  lidar: {
+   lidar_connected: false,
+  },
   pixhawk: {},
   pixhawk_drone: {},
   message_count: 0,
