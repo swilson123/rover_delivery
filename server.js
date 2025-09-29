@@ -43,6 +43,7 @@ const rover = {
   send_pixhawk_command: require('./lib/pixhawk/send_pixhawk_command.js'),
   pixhawk_message_handler: require('./lib/pixhawk/pixhawk_message_handler.js'),
   set_flight_mode: require('./lib/pixhawk/set_flight_mode.js'),
+  lidar_message_handler: require('./lib/lidar/lidar_message_handler.js'),
   GPS: require("gps"),
   angles: require("angles"),
   bufferpack: require("bufferpack"),
