@@ -162,6 +162,7 @@ const rover = {
     updating_travel_alt: false
   },
   mission: {
+    last_reached_mission_seq: 0,
     current_mission_seq: 0,
     mission_count: 0,
     package_delivered: false,
