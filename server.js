@@ -1,3 +1,59 @@
+
+// Check for conflicting processes using the lidar serial port before starting
+
+const { exec } = require('child_process');
+const lidarPortPath = '/dev/tty.usbserial-21340';
+exec(`lsof | grep ${lidarPortPath}`, (err, stdout, stderr) => {
+  // Ignore exit code 1 (no match found), only treat other errors as real errors
+  if (err && err.code !== 1) {
+    console.error('Error running lsof:', err);
+  } else if (stdout.trim().length === 0) {
+    console.log(`No processes are using ${lidarPortPath}.`);
+  } else {
+    console.log(`Processes using ${lidarPortPath} (PID first column):\n`);
+    console.log(stdout);
+    // Auto-kill all PIDs found in the first column
+    const lines = stdout.trim().split('\n');
+    const pids = Array.from(new Set(lines.map(line => line.trim().split(/\s+/)[1])));
+    let killCount = 0;
+    let killErrors = [];
+    let killDone = () => {
+      // Wait 1 second after killing processes to allow OS to release the port
+      setTimeout(() => {
+        if (killErrors.length > 0) {
+          console.error('Some processes failed to be killed:', killErrors);
+        }
+        console.log('Waited 1 second for port release after killing processes.');
+        // Continue with startup here if needed
+      }, 1000);
+    };
+    if (pids.length === 0) {
+      killDone();
+    } else {
+      pids.forEach(pid => {
+        if (/^\d+$/.test(pid)) {
+          exec(`kill -9 ${pid}`, (killErr) => {
+            killCount++;
+            if (killErr) {
+              killErrors.push(`PID ${pid}: ${killErr.message}`);
+            } else {
+              console.log(`Killed process using ${lidarPortPath}: PID ${pid}`);
+            }
+            if (killCount === pids.length) {
+              killDone();
+            }
+          });
+        } else {
+          killCount++;
+          if (killCount === pids.length) {
+            killDone();
+          }
+        }
+      });
+    }
+  }
+});
+
 /*
 #========================================================================================================================================== #
 ..................................................................Global Variables.........................................................
@@ -22,6 +78,7 @@ const rover = {
   },
   lidar: {
    lidar_connected: false,
+   red_light_green_light: null,
   },
   pixhawk: {},
   pixhawk_drone: {},
@@ -263,26 +320,7 @@ try {
 }
 
 
-setInterval(() => {
 
-//   console.log("Zone", rover.zones[11]);
-
-//    if (rover.zones[11].timestamp + 1000 > Date.now()) {
-// console.log("Zone", rover.zones[11].zone, "is active");
-//    }
-
-  for (var i = 0; i < rover.zones.length; i++) {
-
-    if (rover.zones[i].timestamp + 1000 > Date.now()) {
-    
-      console.log("Zone", rover.zones[i].zone, "red light");
-    }
-    else{
-      console.log("Zone", rover.zones[i].zone, "green light");
-    }
-
-  }
-}, 2000);
 
 
 
