@@ -170,18 +170,18 @@ const rover = {
 
   },
   zones:[
-    { zone: 1, min_angle: 30, max_angle: 60, min_distance_mm: 100, max_distance_mm: 400, timestamp: null, distance_mm: null, angle: null},
-    { zone: 2, min_angle: 60, max_angle: 90, min_distance_mm: 100, max_distance_mm: 400, timestamp: null, distance_mm: null, angle: null},
-    { zone: 3, min_angle: 90, max_angle: 120, min_distance_mm: 100, max_distance_mm: 400, timestamp: null, distance_mm: null, angle: null},
-    { zone: 4, min_angle: 120, max_angle: 150, min_distance_mm: 100, max_distance_mm: 400, timestamp: null, distance_mm: null, angle: null},
-    { zone: 5, min_angle: 150, max_angle: 180, min_distance_mm: 100, max_distance_mm: 400, timestamp: null, distance_mm: null, angle: null},
-    { zone: 6, min_angle: 180, max_angle: 210, min_distance_mm: 100, max_distance_mm: 400, timestamp: null, distance_mm: null, angle: null},
-    { zone: 7, min_angle: 210, max_angle: 240, min_distance_mm: 100, max_distance_mm: 400, timestamp: null, distance_mm: null, angle: null},
-    { zone: 8, min_angle: 240, max_angle: 270, min_distance_mm: 100, max_distance_mm: 400, timestamp: null, distance_mm: null, angle: null},
-    { zone: 9, min_angle: 270, max_angle: 300, min_distance_mm: 100, max_distance_mm: 400, timestamp: null, distance_mm: null, angle: null},
-    { zone: 10, min_angle: 300, max_angle: 330, min_distance_mm: 100, max_distance_mm: 400, timestamp: null, distance_mm: null, angle: null},
-    { zone: 11, min_angle: 330, max_angle: 360, min_distance_mm: 100, max_distance_mm: 400, timestamp: null, distance_mm: null, angle: null},
-    { zone: 12, min_angle: 0, max_angle: 30, min_distance_mm: 100, max_distance_mm: 400, timestamp: null, distance_mm: null, angle: null},
+    { zone: 1, min_angle: 30, max_angle: 60, min_distance_mm: 100, max_distance_mm: 600, timestamp: null, distance_mm: null, angle: null},
+    { zone: 2, min_angle: 60, max_angle: 90, min_distance_mm: 100, max_distance_mm: 600, timestamp: null, distance_mm: null, angle: null},
+    { zone: 3, min_angle: 90, max_angle: 120, min_distance_mm: 100, max_distance_mm: 600, timestamp: null, distance_mm: null, angle: null},
+    { zone: 4, min_angle: 120, max_angle: 150, min_distance_mm: 100, max_distance_mm: 600, timestamp: null, distance_mm: null, angle: null},
+    { zone: 5, min_angle: 150, max_angle: 180, min_distance_mm: 100, max_distance_mm: 600, timestamp: null, distance_mm: null, angle: null},
+    { zone: 6, min_angle: 180, max_angle: 210, min_distance_mm: 100, max_distance_mm: 600, timestamp: null, distance_mm: null, angle: null},
+    { zone: 7, min_angle: 210, max_angle: 240, min_distance_mm: 100, max_distance_mm: 600, timestamp: null, distance_mm: null, angle: null},
+    { zone: 8, min_angle: 240, max_angle: 270, min_distance_mm: 100, max_distance_mm: 600, timestamp: null, distance_mm: null, angle: null},
+    { zone: 9, min_angle: 270, max_angle: 300, min_distance_mm: 100, max_distance_mm: 600, timestamp: null, distance_mm: null, angle: null},
+    { zone: 10, min_angle: 300, max_angle: 330, min_distance_mm: 100, max_distance_mm: 600, timestamp: null, distance_mm: null, angle: null},
+    { zone: 11, min_angle: 330, max_angle: 360, min_distance_mm: 100, max_distance_mm: 600, timestamp: null, distance_mm: null, angle: null},
+    { zone: 12, min_angle: 0, max_angle: 30, min_distance_mm: 100, max_distance_mm: 600, timestamp: null, distance_mm: null, angle: null},
   ],
   mav_version: 2,
 };
@@ -275,10 +275,10 @@ setInterval(() => {
 
     if (rover.zones[i].timestamp + 1000 > Date.now()) {
     
-      console.log("Zone", rover.zones[i].zone, "is active");
+      console.log("Zone", rover.zones[i].zone, "red light");
     }
     else{
-      console.log("Zone", rover.zones[i].zone, "is inactive");
+      console.log("Zone", rover.zones[i].zone, "green light");
     }
 
   }
