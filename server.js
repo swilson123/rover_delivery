@@ -241,7 +241,8 @@ const rover = {
     current_mission_seq: 0,
     mission_count: 0,
     package_delivered: false,
-    waypoints: []
+    waypoints: [],
+    path_clear: true,
 
   },
   guided_mode_command_robot: {
