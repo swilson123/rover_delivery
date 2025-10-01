@@ -2,6 +2,7 @@
 // Check for conflicting processes using the lidar serial port before starting
 
 const { exec } = require('child_process');
+const disarm_robot = require('./lib/pixhawk/disarm_robot.js');
 const lidarPortPath = '/dev/tty.usbserial-21340';
 exec(`lsof | grep ${lidarPortPath}`, (err, stdout, stderr) => {
   // Ignore exit code 1 (no match found), only treat other errors as real errors
@@ -77,8 +78,8 @@ const rover = {
     altitude: 0,
   },
   lidar: {
-   lidar_connected: false,
-   red_light_green_light: null,
+    lidar_connected: false,
+    red_light_green_light: null,
   },
   pixhawk: {},
   pixhawk_drone: {},
@@ -103,6 +104,7 @@ const rover = {
   send_pixhawk_command: require('./lib/pixhawk/send_pixhawk_command.js'),
   pixhawk_message_handler: require('./lib/pixhawk/pixhawk_message_handler.js'),
   set_flight_mode: require('./lib/pixhawk/set_flight_mode.js'),
+  update_mav_mode: require('./lib/pixhawk/update_mav_mode.js'),
   lidar_message_handler: require('./lib/lidar/lidar_message_handler.js'),
   GPS: require("gps"),
   angles: require("angles"),
@@ -114,7 +116,11 @@ const rover = {
   mission_item_reached: require('./lib/mission/mission_item_reached.js'),
   download_mission: require('./lib/mission/download_mission.js'),
   reset_rover: require('./lib/mission/reset_rover.js'),
+  disarm_robot: require('./lib/pixhawk/disarm_robot.js'),
   mission_item_array: require('./lib/mission/mission_item_array.js'),
+  guided_mode_command: require('./lib/mission/guided_mode_command.js'),
+  avoid_object: require('./lib/mission/avoid_object.js'),
+  get_bearing: require('./lib/mission/get_bearing.js'),
   delivery_device: 'dump_trailer',
   flight_mode_trigger: null,
   sitl: {
@@ -211,6 +217,18 @@ const rover = {
     22: 'FLOWHOLD',
     23: 'FOLLOW'
   },
+  MavStates: {
+    0: 'MAV_STATE_UNINIT',
+    1: 'MAV_STATE_BOOT',
+    2: 'MAV_STATE_CALIBRATING',
+    3: 'MAV_STATE_STANDBY',
+    4: 'MAV_STATE_ACTIVE',
+    5: 'MAV_STATE_CRITICAL',
+    6: 'MAV_STATE_EMERGENCY',
+    7: 'MAV_STATE_POWEROFF',
+    8: 'MAV_STATE_ENUM_END'
+
+  },
   altitude: {
     take_off_msl_alt_meters: 0,
     rangefinder_alt_meters: 0,
@@ -226,21 +244,27 @@ const rover = {
     waypoints: []
 
   },
-  zones:[
-    { zone: 1, min_angle: 30, max_angle: 60, min_distance_mm: 100, max_distance_mm: 600, timestamp: null, distance_mm: null, angle: null},
-    { zone: 2, min_angle: 60, max_angle: 90, min_distance_mm: 100, max_distance_mm: 600, timestamp: null, distance_mm: null, angle: null},
-    { zone: 3, min_angle: 90, max_angle: 120, min_distance_mm: 100, max_distance_mm: 600, timestamp: null, distance_mm: null, angle: null},
-    { zone: 4, min_angle: 120, max_angle: 150, min_distance_mm: 100, max_distance_mm: 600, timestamp: null, distance_mm: null, angle: null},
-    { zone: 5, min_angle: 150, max_angle: 180, min_distance_mm: 100, max_distance_mm: 600, timestamp: null, distance_mm: null, angle: null},
-    { zone: 6, min_angle: 180, max_angle: 210, min_distance_mm: 100, max_distance_mm: 600, timestamp: null, distance_mm: null, angle: null},
-    { zone: 7, min_angle: 210, max_angle: 240, min_distance_mm: 100, max_distance_mm: 600, timestamp: null, distance_mm: null, angle: null},
-    { zone: 8, min_angle: 240, max_angle: 270, min_distance_mm: 100, max_distance_mm: 600, timestamp: null, distance_mm: null, angle: null},
-    { zone: 9, min_angle: 270, max_angle: 300, min_distance_mm: 100, max_distance_mm: 600, timestamp: null, distance_mm: null, angle: null},
-    { zone: 10, min_angle: 300, max_angle: 330, min_distance_mm: 100, max_distance_mm: 600, timestamp: null, distance_mm: null, angle: null},
-    { zone: 11, min_angle: 330, max_angle: 360, min_distance_mm: 100, max_distance_mm: 600, timestamp: null, distance_mm: null, angle: null},
-    { zone: 12, min_angle: 0, max_angle: 30, min_distance_mm: 100, max_distance_mm: 600, timestamp: null, distance_mm: null, angle: null},
+  guided_mode_command_robot: {
+    mav_frame: 8,
+    type_mask: '0b100111111000',
+    yaw_rate: 0.5,
+  },
+  zones: [
+    { zone: 1, light: "red", min_angle: 30, max_angle: 60, min_distance_mm: 100, max_distance_mm: 600, timestamp: null, distance_mm: null, angle: null },
+    { zone: 2, light: "red", min_angle: 60, max_angle: 90, min_distance_mm: 100, max_distance_mm: 600, timestamp: null, distance_mm: null, angle: null },
+    { zone: 3, light: "red", min_angle: 90, max_angle: 120, min_distance_mm: 100, max_distance_mm: 600, timestamp: null, distance_mm: null, angle: null },
+    { zone: 4, light: "red", min_angle: 120, max_angle: 150, min_distance_mm: 100, max_distance_mm: 600, timestamp: null, distance_mm: null, angle: null },
+    { zone: 5, light: "red", min_angle: 150, max_angle: 180, min_distance_mm: 100, max_distance_mm: 600, timestamp: null, distance_mm: null, angle: null },
+    { zone: 6, light: "red", min_angle: 180, max_angle: 210, min_distance_mm: 100, max_distance_mm: 600, timestamp: null, distance_mm: null, angle: null },
+    { zone: 7, light: "red", min_angle: 210, max_angle: 240, min_distance_mm: 100, max_distance_mm: 600, timestamp: null, distance_mm: null, angle: null },
+    { zone: 8, light: "red", min_angle: 240, max_angle: 270, min_distance_mm: 100, max_distance_mm: 600, timestamp: null, distance_mm: null, angle: null },
+    { zone: 9, light: "red", min_angle: 270, max_angle: 300, min_distance_mm: 100, max_distance_mm: 600, timestamp: null, distance_mm: null, angle: null },
+    { zone: 10, light: "red", min_angle: 300, max_angle: 330, min_distance_mm: 100, max_distance_mm: 600, timestamp: null, distance_mm: null, angle: null },
+    { zone: 11, light: "red", min_angle: 330, max_angle: 360, min_distance_mm: 100, max_distance_mm: 600, timestamp: null, distance_mm: null, angle: null },
+    { zone: 12, light: "red", min_angle: 0, max_angle: 30, min_distance_mm: 100, max_distance_mm: 600, timestamp: null, distance_mm: null, angle: null },
   ],
   mav_version: 2,
+
 };
 
 // host information used by logging
@@ -295,9 +319,9 @@ if (rover.sitl.on) {
   }, 2000);
 
 }
-else{
+else {
   //connect to pixhawk...............
-  
+
 }
 
 // Auto-start RPLIDAR when server starts (if not SITL or even if SITL depending on opts)
