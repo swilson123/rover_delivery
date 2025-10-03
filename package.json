@@ -10,6 +10,7 @@
     "socket": "^1.1.23",
     "underscore": "^1.13.7",
     "winston": "^3.17.0",
-    "winston-daily-rotate-file": "^5.0.0"
+    "winston-daily-rotate-file": "^5.0.0",
+    "ws": "^8.18.3"
   }
 }
