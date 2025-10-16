@@ -64,8 +64,8 @@ exec(`lsof | grep ${lidarPortPath}`, (err, stdout, stderr) => {
 const rover = {
   gps: null,
   pixhawk_port: {
-    comName: null,
-    baudrate: 57600,
+    comName: "/dev/ttyAMA0",
+    baudrate: 115200,
     serial: null,
     mavlink: null,
     ping_num: 0,
@@ -94,7 +94,7 @@ const rover = {
   // SerialPort: require("serialport").SerialPort, // old API
   // use the modern serialport export; we'll keep the constructor available below
   SerialPort: null,
-  mavlink: require("./lib/pixhawk/mavlink.js"),
+  mavlink: require("./lib/pixhawk/mavlink2.js"),
   init_logs: require("./lib/logging/init_logs.js"),
   create_logs: require("./lib/logging/create_logs.js"),
   logging: require("./lib/logging/logging.js"),
@@ -109,7 +109,8 @@ const rover = {
   GPS: require("gps"),
   angles: require("angles"),
   bufferpack: require("bufferpack"),
-  pixhawk_drone: require("./lib/pixhawk_drone.js"),
+  pixhawk_drone: require("./lib/pixhawk_drone.js"), 
+  connect_to_robot_pixhawk: require("./lib/pixhawk/connect_to_robot_pixhawk.js"),
   init_robotkit: require('./lib/robotkit/init_robotkit.js'),
   connect_to_sitl: require('./lib/robotkit/connect_to_sitl.js'),
   deliver_package: require('./lib/mission/deliver_package.js'),
@@ -124,7 +125,7 @@ const rover = {
   delivery_device: 'dump_trailer',
   flight_mode_trigger: null,
   sitl: {
-    on: true,
+    on: false,
     port: 5760,
     host: '127.0.0.1',
     robotkit: null
@@ -264,7 +265,7 @@ const rover = {
     { zone: 11, light: "red", min_angle: 330, max_angle: 360, min_distance_mm: 100, max_distance_mm: 600, timestamp: null, distance_mm: null, angle: null },
     { zone: 12, light: "red", min_angle: 0, max_angle: 30, min_distance_mm: 100, max_distance_mm: 600, timestamp: null, distance_mm: null, angle: null },
   ],
-  mav_version: 2,
+  mav_version: 1,
 
 };
 
@@ -290,14 +291,15 @@ async function update_serialports(show_ports) {
     const ports = await rover.SerialPort.list();
     ports.forEach(function (port) {
       if (show_ports) {
-        console.log(port);
-      } else if (!rover.pixhawk_port.comName) {
+        console.log(port.path);
+      }
+      
+      if (port.path == rover.pixhawk_port.comName) {
         // set first available port as pixhawk comName (keep existing behavior but fixed condition)
-        console.log('Pixhawk comName: ' + port.path || port.comName);
-        rover.pixhawk_port.comName = port.path || port.comName;
-        if (typeof connect_to_pixhawk === 'function') {
-          connect_to_pixhawk();
-        }
+        console.log('Pixhawk comName: ' +port.path);
+        
+          rover.connect_to_robot_pixhawk(rover);
+        
       }
     });
   } catch (err) {
@@ -309,7 +311,7 @@ async function update_serialports(show_ports) {
 //Logs: Create..............
 rover.init_logs(rover);
 
-
+update_serialports(true);
 //SITL: Software in the loop settings...................
 if (rover.sitl.on) {
 
@@ -325,27 +327,30 @@ else {
 
 }
 
-// Auto-start RPLIDAR when server starts (if not SITL or even if SITL depending on opts)
-try {
-  const rplidar = require('./lib/lidar/rplidar.js');
-  // start with defaults; parse mode enabled
-  rover.lidar = rplidar.init(rover, { parse: true });
-  rover.lidar.on('open', (info) => { console.log('RPLIDAR connected', info); });
-  rover.lidar.on('data', (node) => {
-    // node: { quality, startFlag, angle, distance_mm }
-    const line = `LIDAR angle=${node.angle.toFixed(2)} distance=${node.distance_mm.toFixed(2)} quality=${node.quality} start=${node.startFlag}`;
-    console.log(line);
-    // optionally store last reading on rover
-    rover.last_lidar = node;
-  });
-  rover.lidar.on('raw', (chunk) => { /* ignore raw by default */ });
-  rover.lidar.on('error', (err) => { console.error('RPLIDAR error', err && err.message); });
-} catch (e) {
-  console.warn('RPLIDAR module not available or failed to start:', e && e.message);
-}
+// // Auto-start RPLIDAR when server starts (if not SITL or even if SITL depending on opts)
+// try {
+//   const rplidar = require('./lib/lidar/rplidar.js');
+//   // start with defaults; parse mode enabled
+//   rover.lidar = rplidar.init(rover, { parse: true });
+//   rover.lidar.on('open', (info) => { console.log('RPLIDAR connected', info); });
+//   rover.lidar.on('data', (node) => {
+//     // node: { quality, startFlag, angle, distance_mm }
+//     const line = `LIDAR angle=${node.angle.toFixed(2)} distance=${node.distance_mm.toFixed(2)} quality=${node.quality} start=${node.startFlag}`;
+//     console.log(line);
+//     // optionally store last reading on rover
+//     rover.last_lidar = node;
+//   });
+//   rover.lidar.on('raw', (chunk) => { /* ignore raw by default */ });
+//   rover.lidar.on('error', (err) => { console.error('RPLIDAR error', err && err.message); });
+// } catch (e) {
+//   console.warn('RPLIDAR module not available or failed to start:', e && e.message);
+// }
 
 
 
+setTimeout(() => {
+rover.disarm_robot(rover, null);
 
+}, 2000);
 
 
