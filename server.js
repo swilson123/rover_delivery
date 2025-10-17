@@ -1,60 +1,3 @@
-
-// Check for conflicting processes using the lidar serial port before starting
-
-const { exec } = require('child_process');
-const disarm_robot = require('./lib/pixhawk/disarm_robot.js');
-const lidarPortPath = '/dev/tty.usbserial-21340';
-exec(`lsof | grep ${lidarPortPath}`, (err, stdout, stderr) => {
-  // Ignore exit code 1 (no match found), only treat other errors as real errors
-  if (err && err.code !== 1) {
-    console.error('Error running lsof:', err);
-  } else if (stdout.trim().length === 0) {
-    console.log(`No processes are using ${lidarPortPath}.`);
-  } else {
-    console.log(`Processes using ${lidarPortPath} (PID first column):\n`);
-    console.log(stdout);
-    // Auto-kill all PIDs found in the first column
-    const lines = stdout.trim().split('\n');
-    const pids = Array.from(new Set(lines.map(line => line.trim().split(/\s+/)[1])));
-    let killCount = 0;
-    let killErrors = [];
-    let killDone = () => {
-      // Wait 1 second after killing processes to allow OS to release the port
-      setTimeout(() => {
-        if (killErrors.length > 0) {
-          console.error('Some processes failed to be killed:', killErrors);
-        }
-        console.log('Waited 1 second for port release after killing processes.');
-        // Continue with startup here if needed
-      }, 1000);
-    };
-    if (pids.length === 0) {
-      killDone();
-    } else {
-      pids.forEach(pid => {
-        if (/^\d+$/.test(pid)) {
-          exec(`kill -9 ${pid}`, (killErr) => {
-            killCount++;
-            if (killErr) {
-              killErrors.push(`PID ${pid}: ${killErr.message}`);
-            } else {
-              console.log(`Killed process using ${lidarPortPath}: PID ${pid}`);
-            }
-            if (killCount === pids.length) {
-              killDone();
-            }
-          });
-        } else {
-          killCount++;
-          if (killCount === pids.length) {
-            killDone();
-          }
-        }
-      });
-    }
-  }
-});
-
 /*
 #========================================================================================================================================== #
 ..................................................................Global Variables.........................................................
@@ -70,7 +13,7 @@ const rover = {
     mavlink: null,
     ping_num: 0,
     targetSystem: 1,
-    targetComponent: 1
+    targetComponent: 25
   },
   gps: {
     latitude: 0,
@@ -109,7 +52,7 @@ const rover = {
   GPS: require("gps"),
   angles: require("angles"),
   bufferpack: require("bufferpack"),
-  pixhawk_drone: require("./lib/pixhawk_drone.js"), 
+  pixhawk_drone: require("./lib/pixhawk_drone.js"),
   connect_to_robot_pixhawk: require("./lib/pixhawk/connect_to_robot_pixhawk.js"),
   init_robotkit: require('./lib/robotkit/init_robotkit.js'),
   connect_to_sitl: require('./lib/robotkit/connect_to_sitl.js'),
@@ -293,13 +236,13 @@ async function update_serialports(show_ports) {
       if (show_ports) {
         console.log(port.path);
       }
-      
+
       if (port.path == rover.pixhawk_port.comName) {
         // set first available port as pixhawk comName (keep existing behavior but fixed condition)
-        console.log('Pixhawk comName: ' +port.path);
-        
-          rover.connect_to_robot_pixhawk(rover);
-        
+        console.log('Pixhawk comName: ' + port.path);
+
+        rover.connect_to_robot_pixhawk(rover);
+
       }
     });
   } catch (err) {
@@ -327,30 +270,191 @@ else {
 
 }
 
-// // Auto-start RPLIDAR when server starts (if not SITL or even if SITL depending on opts)
-// try {
-//   const rplidar = require('./lib/lidar/rplidar.js');
-//   // start with defaults; parse mode enabled
-//   rover.lidar = rplidar.init(rover, { parse: true });
-//   rover.lidar.on('open', (info) => { console.log('RPLIDAR connected', info); });
-//   rover.lidar.on('data', (node) => {
-//     // node: { quality, startFlag, angle, distance_mm }
-//     const line = `LIDAR angle=${node.angle.toFixed(2)} distance=${node.distance_mm.toFixed(2)} quality=${node.quality} start=${node.startFlag}`;
-//     console.log(line);
-//     // optionally store last reading on rover
-//     rover.last_lidar = node;
-//   });
-//   rover.lidar.on('raw', (chunk) => { /* ignore raw by default */ });
-//   rover.lidar.on('error', (err) => { console.error('RPLIDAR error', err && err.message); });
-// } catch (e) {
-//   console.warn('RPLIDAR module not available or failed to start:', e && e.message);
-// }
+
+
+//Lidar: Start...................................
+const { spawn } = require('child_process');
+
+const lidar = spawn('./ultra_simple', ['--channel', '--serial', '/dev/ttyAMA2', '1000000'], {
+  cwd: '../rplidar_sdk/output/Linux/Release'
+});
+
+lidar.stdout.setEncoding('utf8');
+
+lidar.stdout.on('data', (data) => {
+  const lines = data.split('\n');
+  for (const line of lines) {
+    const parsed = parseLidarOutput(line);
+    if (parsed) {
+      //console.log(parsed);  // Do something with the data
+      rover.lidar_message_handler(rover, parsed);
+    }
+  }
+});
+
+lidar.stderr.on('data', (data) => {
+  console.error(`LIDAR error: ${data}`);
+});
+
+lidar.on('close', (code) => {
+  console.log(`ultra_simple exited with code ${code}`);
+});
+
+function parseLidarOutput(line) {
+  const regex = /theta:\s*([\d.]+)\s*Dist:\s*([\d.]+)\s*Q:\s*(\d+)/;
+  const match = line.match(regex);
+
+  if (match) {
+    return {
+      angle: parseFloat(match[1]),
+      distance_mm: parseFloat(match[2]),
+      quality: parseInt(match[3]),
+      timestamp: Date.now()
+    };
+  }
+
+  return null;
+}
 
 
 
-setTimeout(() => {
-rover.disarm_robot(rover, null);
+//Servo: Test code.................
 
-}, 2000);
+//test servo code
+var test_servo = false;
+if (test_servo) {
 
 
+
+  let currentPWM1 = 800;
+  let currentPWM2 = 1900;
+  let speed = 1;
+  let rate = 10;
+  setTimeout(() => {
+
+
+    const interval = setInterval(() => {
+      if (currentPWM1 > 1900) {
+        clearInterval(interval); // Stop when below 800
+        return;
+      }
+
+      // Build the data object
+      const data = {
+        param1: 10,         // Servo number (e.g., 10 = SERVO10)
+        param2: currentPWM1, // Current PWM value
+        param3: 0,
+        param4: 0,
+        param5: 0,
+        param6: 0,
+        param7: 0
+      };
+
+      // Build MAVLink message
+      const mav_response = rover.mavlink_messages.MAV_CMD_DO_SET_SERVO(rover, data);
+
+      // Send to Pixhawk
+      rover.send_pixhawk_command(rover, mav_response[0], mav_response[1], null);
+
+      // Decrement
+      currentPWM1 += speed;
+
+    }, rate);
+
+
+    const interval2 = setInterval(() => {
+      if (currentPWM2 < 800) {
+        clearInterval(interval2); // Stop when below 800
+        return;
+      }
+
+      // Build the data object
+      const data = {
+        param1: 11,         // Servo number (e.g., 10 = SERVO10)
+        param2: currentPWM2, // Current PWM value
+        param3: 0,
+        param4: 0,
+        param5: 0,
+        param6: 0,
+        param7: 0
+      };
+
+      // Build MAVLink message
+      const mav_response = rover.mavlink_messages.MAV_CMD_DO_SET_SERVO(rover, data);
+
+      // Send to Pixhawk
+      rover.send_pixhawk_command(rover, mav_response[0], mav_response[1], null);
+
+      // Decrement
+      currentPWM2 -= speed;
+
+    }, rate);
+
+  }, 2000);
+
+  setTimeout(() => {
+
+    const interval = setInterval(() => {
+      if (currentPWM1 < 800) {
+        clearInterval(interval); // Stop when below 800
+        return;
+      }
+
+      // Build the data object
+      const data = {
+        param1: 10,         // Servo number (e.g., 10 = SERVO10)
+        param2: currentPWM1, // Current PWM value
+        param3: 0,
+        param4: 0,
+        param5: 0,
+        param6: 0,
+        param7: 0
+      };
+
+      // Build MAVLink message
+      const mav_response = rover.mavlink_messages.MAV_CMD_DO_SET_SERVO(rover, data);
+
+      // Send to Pixhawk
+      rover.send_pixhawk_command(rover, mav_response[0], mav_response[1], null);
+
+
+
+      // Decrement
+      currentPWM1 -= speed;
+
+    }, rate);
+
+
+    const interval2 = setInterval(() => {
+      if (currentPWM2 > 1900) {
+        clearInterval(interval2); // Stop when below 800
+        return;
+      }
+
+      // Build the data object
+      const data = {
+        param1: 11,         // Servo number (e.g., 10 = SERVO10)
+        param2: currentPWM2, // Current PWM value
+        param3: 0,
+        param4: 0,
+        param5: 0,
+        param6: 0,
+        param7: 0
+      };
+
+      // Build MAVLink message
+      const mav_response = rover.mavlink_messages.MAV_CMD_DO_SET_SERVO(rover, data);
+
+      // Send to Pixhawk
+      rover.send_pixhawk_command(rover, mav_response[0], mav_response[1], null);
+
+      // Decrement
+      currentPWM2 += speed;
+
+    }, rate);
+
+
+  }, 30000);
+
+
+}
