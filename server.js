@@ -319,6 +319,30 @@ function parseLidarOutput(line) {
 
 
 //Servo: Test code.................
+//test servo code
+var test_miro_servo = true;
+if (test_miro_servo) {
+setTimeout(() => {
+ // Build the data object
+      const data = {
+        param1: 12,         // Servo number (e.g., 10 = SERVO10)
+        param2: 1000, // 1000 = unlocked, 2000 = locked
+        param3: 0,
+        param4: 0,
+        param5: 0,
+        param6: 0,
+        param7: 0
+      };
+
+      // Build MAVLink message
+      const mav_response = rover.mavlink_messages.MAV_CMD_DO_SET_SERVO(rover, data);
+
+      // Send to Pixhawk
+      rover.send_pixhawk_command(rover, mav_response[0], mav_response[1], null);
+
+        }, 3000);
+}
+
 
 //test servo code
 var test_servo = false;
