@@ -4,7 +4,6 @@
 #========================================================================================================================================== #
 */
 
-const gpio_connect = require('./lib/gpio/gpio_connect.js');
 
 const rover = {
   gps: null,
@@ -15,7 +14,8 @@ const rover = {
     mavlink: null,
     ping_num: 0,
     targetSystem: 1,
-    targetComponent: 25
+    targetComponent: 25,
+    connected: false
   },
   gps: {
     latitude: 0,
@@ -74,7 +74,16 @@ const rover = {
   servo_arm_passenger_side: require('./lib/servos/servo_arm_passenger_side.js'),
   servo_dump_tailer: require('./lib/servos/servo_dump_tailer.js'),
   set_delivery_type: require('./lib/package_delivery/set_delivery_type.js'),
+  set_arm_delivery: require('./lib/package_delivery/set_arm_delivery.js'),
+  connect_to_devices: require('./lib/start_rover_devices/connect_to_devices.js'),
   delivery_device: 'dump_trailer',
+  gpio:{
+    connected: false
+  },
+  rplidar:{
+    connected: false,
+    comName: "/dev/ttyAMA2",
+  },
   flight_mode_trigger: null,
   sitl: {
     on: false,
@@ -224,46 +233,12 @@ const rover = {
 // host information used by logging
 rover.hostname = require('os').hostname();
 
-//Ports: define...................................
-
-async function update_serialports(show_ports) {
-  // lazy-require serialport to avoid throwing at module load if native bindings missing
-  if (!rover.SerialPort) {
-    try {
-      const sp = require('serialport');
-      // serialport v9+ exports SerialPort and a static list() method that returns a Promise
-      rover.SerialPort = sp.SerialPort || sp;
-    } catch (err) {
-      console.error('update_serialports: failed to require serialport', err);
-      return;
-    }
-  }
-
-  try {
-    const ports = await rover.SerialPort.list();
-    ports.forEach(function (port) {
-      if (show_ports) {
-        console.log(port.path);
-      }
-
-      if (port.path == rover.pixhawk_port.comName) {
-        // set first available port as pixhawk comName (keep existing behavior but fixed condition)
-        console.log('Pixhawk comName: ' + port.path);
-
-        rover.connect_to_robot_pixhawk(rover);
-
-      }
-    });
-  } catch (err) {
-    console.error('update_serialports: error listing ports', err);
-  }
-}
 
 
 //Logs: Create..............
 rover.init_logs(rover);
 
-update_serialports(true);
+
 //SITL: Software in the loop settings...................
 if (rover.sitl.on) {
 
@@ -276,101 +251,5 @@ if (rover.sitl.on) {
 }
 else {
   //connect to pixhawk...............
-
-}
-
-//Lidar: Start...................................
-rover.lidar_connect(rover);
-
-//GPIO: Start...................................
-rover.gpio_connect(rover);
-
-
-//Servo: Test code.................
-//test servo code
-var test_miro_servo = false;
-if (test_miro_servo) {
-  setTimeout(() => {
-    // Build the data object
-    rover.servo_bed(rover, 1000);
-  }, 3000);
-}
-
-var test_dump_tailer = false;
-if (test_dump_tailer) {
-  setTimeout(() => {
-    // Build the data object
-    rover.servo_dump_tailer(rover, 1000);
-  }, 3000);
-}
-
-//test servo code
-var test_servo = false;
-if (test_servo) {
-
-
-  let currentPWM1 = 800;
-  let currentPWM2 = 1900;
-  let speed = 1;
-  let rate = 10;
-  setTimeout(() => {
-
-
-    const interval = setInterval(() => {
-      if (currentPWM1 > 1900) {
-        clearInterval(interval); // Stop when below 800
-        return;
-      }
-
-      rover.servo_arm_passenger_side(rover, currentPWM1);
-      // Decrement
-      currentPWM1 += speed;
-
-    }, rate);
-
-
-    const interval2 = setInterval(() => {
-      if (currentPWM2 < 800) {
-        clearInterval(interval2); // Stop when below 800
-        return;
-      }
-
-      rover.servo_arm_driver_side(rover, currentPWM2);
-      // Decrement
-      currentPWM2 -= speed;
-
-    }, rate);
-
-  }, 2000);
-
-  setTimeout(() => {
-
-    const interval = setInterval(() => {
-      if (currentPWM1 < 800) {
-        clearInterval(interval); // Stop when below 800
-        return;
-      }
-
-      rover.servo_arm_passenger_side(rover, currentPWM1);
-      // Decrement
-      currentPWM1 -= speed;
-
-    }, rate);
-
-
-    const interval2 = setInterval(() => {
-      if (currentPWM2 > 1900) {
-        clearInterval(interval2); // Stop when below 800
-        return;
-      }
-      rover.servo_arm_driver_side(rover, currentPWM2);
-      // Decrement
-      currentPWM2 += speed;
-
-    }, rate);
-
-
-  }, 30000);
-
 
 }
