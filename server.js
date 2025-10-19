@@ -4,6 +4,8 @@
 #========================================================================================================================================== #
 */
 
+const gpio_connect = require('./lib/gpio/gpio_connect.js');
+
 const rover = {
   gps: null,
   pixhawk_port: {
@@ -48,6 +50,8 @@ const rover = {
   pixhawk_message_handler: require('./lib/pixhawk/pixhawk_message_handler.js'),
   set_flight_mode: require('./lib/pixhawk/set_flight_mode.js'),
   update_mav_mode: require('./lib/pixhawk/update_mav_mode.js'),
+  gpio_connect: require('./lib/gpio/gpio_connect.js'),
+  lidar_connect: require('./lib/lidar/lidar_connect.js'),
   lidar_message_handler: require('./lib/lidar/lidar_message_handler.js'),
   GPS: require("gps"),
   angles: require("angles"),
@@ -65,6 +69,11 @@ const rover = {
   guided_mode_command: require('./lib/mission/guided_mode_command.js'),
   avoid_object: require('./lib/mission/avoid_object.js'),
   get_bearing: require('./lib/mission/get_bearing.js'),
+  servo_bed: require('./lib/servos/servo_bed.js'),
+  servo_arm_driver_side: require('./lib/servos/servo_arm_driver_side.js'),
+  servo_arm_passenger_side: require('./lib/servos/servo_arm_passenger_side.js'),
+  servo_dump_tailer: require('./lib/servos/servo_dump_tailer.js'),
+  set_delivery_type: require('./lib/package_delivery/set_delivery_type.js'),
   delivery_device: 'dump_trailer',
   flight_mode_trigger: null,
   sitl: {
@@ -270,84 +279,34 @@ else {
 
 }
 
-
-
 //Lidar: Start...................................
-const { spawn } = require('child_process');
+rover.lidar_connect(rover);
 
-const lidar = spawn('./ultra_simple', ['--channel', '--serial', '/dev/ttyAMA2', '1000000'], {
-  cwd: '../rplidar_sdk/output/Linux/Release'
-});
-
-lidar.stdout.setEncoding('utf8');
-
-lidar.stdout.on('data', (data) => {
-  const lines = data.split('\n');
-  for (const line of lines) {
-    const parsed = parseLidarOutput(line);
-    if (parsed) {
-      //console.log(parsed);  // Do something with the data
-      rover.lidar_message_handler(rover, parsed);
-    }
-  }
-});
-
-lidar.stderr.on('data', (data) => {
-  console.error(`LIDAR error: ${data}`);
-});
-
-lidar.on('close', (code) => {
-  console.log(`ultra_simple exited with code ${code}`);
-});
-
-function parseLidarOutput(line) {
-  const regex = /theta:\s*([\d.]+)\s*Dist:\s*([\d.]+)\s*Q:\s*(\d+)/;
-  const match = line.match(regex);
-
-  if (match) {
-    return {
-      angle: parseFloat(match[1]),
-      distance_mm: parseFloat(match[2]),
-      quality: parseInt(match[3]),
-      timestamp: Date.now()
-    };
-  }
-
-  return null;
-}
-
+//GPIO: Start...................................
+rover.gpio_connect(rover);
 
 
 //Servo: Test code.................
 //test servo code
-var test_miro_servo = true;
+var test_miro_servo = false;
 if (test_miro_servo) {
-setTimeout(() => {
- // Build the data object
-      const data = {
-        param1: 12,         // Servo number (e.g., 10 = SERVO10)
-        param2: 1000, // 1000 = unlocked, 2000 = locked
-        param3: 0,
-        param4: 0,
-        param5: 0,
-        param6: 0,
-        param7: 0
-      };
-
-      // Build MAVLink message
-      const mav_response = rover.mavlink_messages.MAV_CMD_DO_SET_SERVO(rover, data);
-
-      // Send to Pixhawk
-      rover.send_pixhawk_command(rover, mav_response[0], mav_response[1], null);
-
-        }, 3000);
+  setTimeout(() => {
+    // Build the data object
+    rover.servo_bed(rover, 1000);
+  }, 3000);
 }
 
+var test_dump_tailer = false;
+if (test_dump_tailer) {
+  setTimeout(() => {
+    // Build the data object
+    rover.servo_dump_tailer(rover, 1000);
+  }, 3000);
+}
 
 //test servo code
 var test_servo = false;
 if (test_servo) {
-
 
 
   let currentPWM1 = 800;
@@ -363,23 +322,7 @@ if (test_servo) {
         return;
       }
 
-      // Build the data object
-      const data = {
-        param1: 10,         // Servo number (e.g., 10 = SERVO10)
-        param2: currentPWM1, // Current PWM value
-        param3: 0,
-        param4: 0,
-        param5: 0,
-        param6: 0,
-        param7: 0
-      };
-
-      // Build MAVLink message
-      const mav_response = rover.mavlink_messages.MAV_CMD_DO_SET_SERVO(rover, data);
-
-      // Send to Pixhawk
-      rover.send_pixhawk_command(rover, mav_response[0], mav_response[1], null);
-
+      rover.servo_arm_passenger_side(rover, currentPWM1);
       // Decrement
       currentPWM1 += speed;
 
@@ -392,23 +335,7 @@ if (test_servo) {
         return;
       }
 
-      // Build the data object
-      const data = {
-        param1: 11,         // Servo number (e.g., 10 = SERVO10)
-        param2: currentPWM2, // Current PWM value
-        param3: 0,
-        param4: 0,
-        param5: 0,
-        param6: 0,
-        param7: 0
-      };
-
-      // Build MAVLink message
-      const mav_response = rover.mavlink_messages.MAV_CMD_DO_SET_SERVO(rover, data);
-
-      // Send to Pixhawk
-      rover.send_pixhawk_command(rover, mav_response[0], mav_response[1], null);
-
+      rover.servo_arm_driver_side(rover, currentPWM2);
       // Decrement
       currentPWM2 -= speed;
 
@@ -424,25 +351,7 @@ if (test_servo) {
         return;
       }
 
-      // Build the data object
-      const data = {
-        param1: 10,         // Servo number (e.g., 10 = SERVO10)
-        param2: currentPWM1, // Current PWM value
-        param3: 0,
-        param4: 0,
-        param5: 0,
-        param6: 0,
-        param7: 0
-      };
-
-      // Build MAVLink message
-      const mav_response = rover.mavlink_messages.MAV_CMD_DO_SET_SERVO(rover, data);
-
-      // Send to Pixhawk
-      rover.send_pixhawk_command(rover, mav_response[0], mav_response[1], null);
-
-
-
+      rover.servo_arm_passenger_side(rover, currentPWM1);
       // Decrement
       currentPWM1 -= speed;
 
@@ -454,24 +363,7 @@ if (test_servo) {
         clearInterval(interval2); // Stop when below 800
         return;
       }
-
-      // Build the data object
-      const data = {
-        param1: 11,         // Servo number (e.g., 10 = SERVO10)
-        param2: currentPWM2, // Current PWM value
-        param3: 0,
-        param4: 0,
-        param5: 0,
-        param6: 0,
-        param7: 0
-      };
-
-      // Build MAVLink message
-      const mav_response = rover.mavlink_messages.MAV_CMD_DO_SET_SERVO(rover, data);
-
-      // Send to Pixhawk
-      rover.send_pixhawk_command(rover, mav_response[0], mav_response[1], null);
-
+      rover.servo_arm_driver_side(rover, currentPWM2);
       // Decrement
       currentPWM2 += speed;
 
