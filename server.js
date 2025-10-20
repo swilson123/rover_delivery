@@ -79,7 +79,7 @@ const rover = {
   deliver_package_arm: require('./lib/package_delivery/deliver_package_arm.js'),
   deliver_package_dump_trailer: require('./lib/package_delivery/deliver_package_dump_trailer.js'),
   connect_to_devices: require('./lib/start_rover_devices/connect_to_devices.js'),
-  delivery_device: 'dump_trailer',
+  delivery_device: null,
   servos: {
     arm_driver_side: { min_pwm: 750, trim_pwm: 1400, max_pwm: 1800, set_pwm: 750 },
     arm_passenger_side: { min_pwm: 1900, trim_pwm: 1250, max_pwm: 850, set_pwm: 1900 },
