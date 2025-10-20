@@ -75,8 +75,17 @@ const rover = {
   servo_dump_tailer: require('./lib/servos/servo_dump_tailer.js'),
   set_delivery_type: require('./lib/package_delivery/set_delivery_type.js'),
   set_arm_delivery: require('./lib/package_delivery/set_arm_delivery.js'),
+  set_dump_trailer_delivery: require('./lib/package_delivery/set_dump_trailer_delivery.js'),
+  deliver_package_arm: require('./lib/package_delivery/deliver_package_arm.js'),
+  deliver_package_dump_trailer: require('./lib/package_delivery/deliver_package_dump_trailer.js'),
   connect_to_devices: require('./lib/start_rover_devices/connect_to_devices.js'),
   delivery_device: 'dump_trailer',
+  servos: {
+    arm_driver_side: { min_pwm: 800, trim_pwm: 1500, max_pwm: 2000, set_pwm: 800 },
+    arm_passenger_side: { min_pwm: 2000, trim_pwm: 1200, max_pwm: 800, set_pwm: 1900 },
+    dump_tailer: { min_pwm: 1000, trim_pwm: 1500, max_pwm: 1600, set_pwm: 1000 },
+    bed: { min_pwm: 1000, trim_pwm: 1500, max_pwm: 2000, set_pwm: 1000 }
+  },
   gpio:{
     connected: false
   },
