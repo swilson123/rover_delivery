@@ -81,8 +81,8 @@ const rover = {
   connect_to_devices: require('./lib/start_rover_devices/connect_to_devices.js'),
   delivery_device: 'dump_trailer',
   servos: {
-    arm_driver_side: { min_pwm: 800, trim_pwm: 1500, max_pwm: 2000, set_pwm: 800 },
-    arm_passenger_side: { min_pwm: 2000, trim_pwm: 1200, max_pwm: 800, set_pwm: 1900 },
+    arm_driver_side: { min_pwm: 750, trim_pwm: 1400, max_pwm: 1800, set_pwm: 750 },
+    arm_passenger_side: { min_pwm: 1900, trim_pwm: 1250, max_pwm: 850, set_pwm: 1900 },
     dump_tailer: { min_pwm: 1000, trim_pwm: 1500, max_pwm: 1600, set_pwm: 1000 },
     bed: { min_pwm: 1000, trim_pwm: 1500, max_pwm: 2000, set_pwm: 1000 }
   },
