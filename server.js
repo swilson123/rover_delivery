@@ -14,7 +14,7 @@ const rover = {
     mavlink: null,
     ping_num: 0,
     targetSystem: 1,
-    targetComponent: 25,
+    targetComponent: 0,
     connected: false
   },
   gps: {
@@ -79,6 +79,7 @@ const rover = {
   deliver_package_arm: require('./lib/package_delivery/deliver_package_arm.js'),
   deliver_package_dump_trailer: require('./lib/package_delivery/deliver_package_dump_trailer.js'),
   connect_to_devices: require('./lib/start_rover_devices/connect_to_devices.js'),
+  preform_turn: require('./lib/mission/preform_turn.js'),
   delivery_device: null,
   servos: {
     arm_driver_side: { min_pwm: 750, trim_pwm: 1400, max_pwm: 2000, set_pwm: 750 },
