@@ -228,6 +228,15 @@ const rover = {
     { zone: 12, light: "red", min_angle: 0, max_angle: 30, min_distance_mm: 100, max_distance_mm: 600, timestamp: null, distance_mm: null, angle: null },
   ],
   mav_version: 1,
+      waveshare: {
+        baudrate: 115200,
+        port_path: '/dev/ttyAMA0', //ttyACM0 = usb, ttyAMA0 = gpio
+        connected: false,
+        serial: null,
+        parser: null
+    },
+    connect_to_waveshare: require("./lib/waveshare/connect_to_waveshare"),
+    create_waveshare_message: require("./lib/waveshare/create_waveshare_message"),
 
 };
 
