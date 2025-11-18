@@ -8,7 +8,7 @@
 const rover = {
   gps: null,
   pixhawk_port: {
-    comName: "/dev/ttyAMA0",
+    comName: "/dev/ttyAMA2",
     baudrate: 115200,
     serial: null,
     mavlink: null,
@@ -36,9 +36,8 @@ const rover = {
   dateFormat: require('dateformat'),
   fs: require('fs'),
   net: require('net'),
-  // SerialPort: require("serialport").SerialPort, // old API
-  // use the modern serialport export; we'll keep the constructor available below
-  SerialPort: null,
+  SerialPort: require("serialport").SerialPort, 
+  Readline: require('@serialport/parser-readline').ReadlineParser,
   mavlink: require("./lib/pixhawk/mavlink2.js"),
   init_logs: require("./lib/logging/init_logs.js"),
   create_logs: require("./lib/logging/create_logs.js"),
@@ -92,7 +91,7 @@ const rover = {
   },
   rplidar:{
     connected: false,
-    comName: "/dev/ttyAMA2",
+    comName: "/dev/ttyAMA3",
   },
   flight_mode_trigger: null,
   sitl: {
@@ -263,3 +262,71 @@ else {
   //connect to pixhawk...............
 
 }
+
+
+rover.connect_to_waveshare(rover);
+
+
+// command constants from Waveshare example (ddsm_example/json_cmd.h)
+const CMD_DDSM_CTRL = 10010;        // speed/current/position control
+const CMD_DDSM_CHANGE_ID = 10011;   // change motor ID
+const CMD_CHANGE_MODE = 10012;      // change mode
+const CMD_DDSM_ID_CHECK = 10031;    // query motor ID (only one motor connected)
+const CMD_DDSM_INFO = 10032;        // get info for a motor
+const CMD_HEARTBEAT_TIME = 11001;   // set heartbeat time
+
+const motor_id = 4
+const motor_speed_cmd = 200;
+
+
+// send change ID (example: set motor with physical connection to ID 1 -> change to 2)
+// Only one motor should be connected when sending this command
+// setTimeout(() => {
+//     if (rover.waveshare.connected) {
+//       var message = { "T": CMD_DDSM_CHANGE_ID, "id": motor_id };
+//         rover.create_waveshare_message(rover, message);
+ 
+
+//     } else {
+//         console.log("Waveshare not connected");
+//     }
+// }, 1000);
+
+setTimeout(() => {
+    if (rover.waveshare.connected) {
+        var message = { "T": CMD_CHANGE_MODE, "id": motor_id, "mode": 2 };
+        rover.create_waveshare_message(rover, message);
+    } else {
+        console.log("Waveshare not connected");
+    }
+}, 2000);
+
+// set heartbeat time (-1 disables automatic stop)
+setTimeout(() => {
+    if (rover.waveshare.connected) {
+        var message = { "T": CMD_HEARTBEAT_TIME, "time": 2000 };
+        rover.create_waveshare_message(rover, message);
+    } else {
+        console.log("Waveshare not connected");
+    }
+}, 3000);
+
+
+
+
+
+
+
+// send control command (speed/current/position depending on mode)
+setTimeout(() => {
+    if (rover.waveshare.connected) {
+        var message = { "T": CMD_DDSM_CTRL, "id": motor_id, "cmd": motor_speed_cmd, "act": 3 };
+        rover.create_waveshare_message(rover, message);
+    } else {
+        console.log("Waveshare not connected");
+    }
+}, 4000);
+
+
+
+
