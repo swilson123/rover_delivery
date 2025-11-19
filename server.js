@@ -236,6 +236,8 @@ const rover = {
     },
     connect_to_waveshare: require("./lib/waveshare/connect_to_waveshare"),
     create_waveshare_message: require("./lib/waveshare/create_waveshare_message"),
+    radio_commands: require("./lib/radio_controller/radio_commands"),
+    move_rover: require("./lib/waveshare/move_rover"),
 
 };
 
