@@ -6,6 +6,7 @@
     "dateformat": "^5.0.3",
     "gpiod": "^0.0.0",
     "gps": "^0.8.1",
+    "gps-distance": "^0.0.4",
     "jspack": "^0.0.4",
     "node-libgpiod": "^0.5.3",
     "pigpio": "^3.3.1",

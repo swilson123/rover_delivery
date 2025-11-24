@@ -240,7 +240,8 @@ const rover = {
     create_waveshare_message: require("./lib/waveshare/create_waveshare_message"),
     radio_commands: require("./lib/radio_controller/radio_commands"),
     move_rover: require("./lib/waveshare/move_rover"),
-    servo_send_command: require("./lib/servos/servo_send_command")
+    servo_send_command: require("./lib/servos/servo_send_command"),
+    calculate_bearing: require("./lib/navigation/calculate_bearing")
 
 };
 
