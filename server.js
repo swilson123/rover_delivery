@@ -53,6 +53,7 @@ const rover = {
   lidar_connect: require('./lib/lidar/lidar_connect.js'),
   lidar_message_handler: require('./lib/lidar/lidar_message_handler.js'),
   GPS: require("gps"),
+  gps_distance: require('gps-distance'),
   angles: require("angles"),
   bufferpack: require("bufferpack"),
   pixhawk_drone: require("./lib/pixhawk_drone.js"),
