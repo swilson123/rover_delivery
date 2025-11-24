@@ -105,6 +105,7 @@ const rover = {
     count: 1
   },
   robot_data: {
+    is_armed: false,
     robot_latitude: 0,
     robot_longitude: 0,
     LOCAL_POSITION_NED: {},
