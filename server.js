@@ -208,6 +208,7 @@ const rover = {
     package_delivered: false,
     waypoints: [],
     path_clear: true,
+    mission_interval: null
 
   },
   guided_mode_command_robot: {
@@ -246,6 +247,7 @@ const rover = {
     go_to_waypoint: require("./lib/navigation/go_to_waypoint"),
     yaw_rover: require("./lib/navigation/yaw_rover"),
     run_mission: require("./lib/navigation/run_mission"),
+    angle_to_pwm: require("./lib/navigation/angle_to_pwm")
 
 };
 
@@ -276,9 +278,7 @@ else {
 
 rover.connect_to_waveshare(rover);
 
- setTimeout(function () {
-rover.yaw_rover(rover, 90);
-  }, 10000);
+
 
 // command constants from Waveshare example (ddsm_example/json_cmd.h)
 // const CMD_DDSM_CTRL = 10010;        // speed/current/position control
