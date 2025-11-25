@@ -107,6 +107,7 @@ const rover = {
   },
   robot_data: {
     is_armed: false,
+    missson_mode: false,
     robot_latitude: 0,
     robot_longitude: 0,
     LOCAL_POSITION_NED: {},
@@ -241,7 +242,10 @@ const rover = {
     radio_commands: require("./lib/radio_controller/radio_commands"),
     move_rover: require("./lib/waveshare/move_rover"),
     servo_send_command: require("./lib/servos/servo_send_command"),
-    calculate_bearing: require("./lib/navigation/calculate_bearing")
+    calculate_bearing: require("./lib/navigation/calculate_bearing"),
+    go_to_waypoint: require("./lib/navigation/go_to_waypoint"),
+    yaw_rover: require("./lib/navigation/yaw_rover"),
+    run_mission: require("./lib/navigation/run_mission"),
 
 };
 
@@ -272,6 +276,9 @@ else {
 
 rover.connect_to_waveshare(rover);
 
+ setTimeout(function () {
+rover.yaw_rover(rover, 90);
+  }, 10000);
 
 // command constants from Waveshare example (ddsm_example/json_cmd.h)
 // const CMD_DDSM_CTRL = 10010;        // speed/current/position control
